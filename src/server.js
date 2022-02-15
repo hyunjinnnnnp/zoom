@@ -17,13 +17,33 @@ const wss = new WebSocket.Server({ server });
 //Creating Websocket server on the top of Http server
 //So you can use both protocol on the same port
 
+const onSocketClose = () => {
+  console.log("Disconnected from the Browser ❌");
+};
+
+const sockets = []; //fake db for socket <-> socket connection
+
 wss.on("connection", (socket) => {
+  sockets.push(socket);
+  socket["nickname"] = "Anon";
   console.log("Connected to Browser ✅");
-  socket.on("close", () => console.log("Disconnected from the Browser ❌"));
-  socket.on("message", (message) => {
-    console.log(message.toString());
+  socket.on("close", onSocketClose);
+  socket.on("message", (msg) => {
+    const message = JSON.parse(msg);
+
+    switch (message.type) {
+      case "new_message":
+        sockets.forEach((aSocket) =>
+          aSocket.send(`${socket.nickname}: ${message.payload}`)
+        );
+        //send back the message to frontend
+        break;
+      case "nickname":
+        socket["nickname"] = message.payload;
+        //identifying users. Socket is basically an object
+        break;
+    }
   });
-  socket.send("hello!");
 });
 
 server.listen(3000, handleListen);
