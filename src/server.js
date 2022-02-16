@@ -1,5 +1,5 @@
 import http from "http";
-import WebSocket from "ws";
+import SocketIO from "socket.io";
 import express from "express";
 
 const app = express();
@@ -12,38 +12,18 @@ app.get("/*", (_, res) => res.redirect("/"));
 
 const handleListen = () => console.log(`Listening on http://localhost:3000`);
 
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-//Creating Websocket server on the top of Http server
-//So you can use both protocol on the same port
+const httpServer = http.createServer(app);
+const wsServer = SocketIO(httpServer);
 
-const onSocketClose = () => {
-  console.log("Disconnected from the Browser ❌");
-};
-
-const sockets = []; //fake db for socket <-> socket connection
-
-wss.on("connection", (socket) => {
-  sockets.push(socket);
-  socket["nickname"] = "Anon";
-  console.log("Connected to Browser ✅");
-  socket.on("close", onSocketClose);
-  socket.on("message", (msg) => {
-    const message = JSON.parse(msg);
-
-    switch (message.type) {
-      case "new_message":
-        sockets.forEach((aSocket) =>
-          aSocket.send(`${socket.nickname}: ${message.payload}`)
-        );
-        //send back the message to frontend
-        break;
-      case "nickname":
-        socket["nickname"] = message.payload;
-        //identifying users. Socket is basically an object
-        break;
-    }
+wsServer.on("connection", (socket) => {
+  socket.on("enter_room", (msg, done) => {
+    console.log(msg);
+    setTimeout(() => {
+      done("hello");
+    }, 15000);
+    //done(): front-end executes this callback function.
+    //not backend!! could be a huge security risk.
   });
 });
 
-server.listen(3000, handleListen);
+httpServer.listen(3000, handleListen);
