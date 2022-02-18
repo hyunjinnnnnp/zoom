@@ -141,6 +141,14 @@ const handleCameraClick = () => {
 
 const handleCameraChange = async () => {
   await getMedia(camerasSelect.value);
+  if (myPeerConnection) {
+    // update data being sent to other browser
+    const newVideoTrack = myStream.getVideoTracks()[0];
+    const videoSender = myPeerConnection
+      .getSenders()
+      .find((sender) => sender.track.kind === "video");
+    videoSender.replaceTrack(newVideoTrack);
+  }
 };
 
 const initCall = async () => {
